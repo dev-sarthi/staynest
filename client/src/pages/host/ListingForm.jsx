@@ -42,7 +42,27 @@ export default function ListingForm() {
   const submit = async (e) => {
     e.preventDefault();
     setError('');
+    
     const { title, description, type, city, state, address, imageUrl, amenities } = form;
+    
+    if (!title.trim() || !description.trim() || !city.trim() || !state.trim() || !address.trim()) {
+      return setError('Please fill in all required fields.');
+    }
+    
+    const price = Number(form.pricePerNight);
+    const guests = Number(form.maxGuests);
+    const beds = Number(form.bedrooms);
+
+    if (isNaN(price) || price <= 0) {
+      return setError('Price per night must be greater than 0.');
+    }
+    if (isNaN(guests) || guests < 1) {
+      return setError('Max guests must be at least 1.');
+    }
+    if (isNaN(beds) || beds < 0) {
+      return setError('Bedrooms cannot be negative.');
+    }
+
     const payload = {
       title,
       description,
@@ -50,9 +70,9 @@ export default function ListingForm() {
       city,
       state,
       address,
-      pricePerNight: Number(form.pricePerNight),
-      maxGuests: Number(form.maxGuests),
-      bedrooms: Number(form.bedrooms),
+      pricePerNight: price,
+      maxGuests: guests,
+      bedrooms: beds,
       amenities: amenities.split(',').map((a) => a.trim()).filter(Boolean),
     };
     if (imageUrl) payload.images = [imageUrl];
