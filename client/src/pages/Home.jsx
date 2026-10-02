@@ -4,11 +4,11 @@ import ListingCard from '../components/ListingCard.jsx';
 import Loader from '../components/Loader.jsx';
 import { STAY_TYPES } from '../utils/format.js';
 
-const initial = { city: '', type: '', guests: '', maxPrice: '' };
+const initial = { city: '', type: '', guests: '', maxPrice: '', sort: '', page: 1 };
 
 export default function Home() {
   const [filters, setFilters] = useState(initial);
-  const [listings, setListings] = useState([]);
+  const [data, setData] = useState({ listings: [], page: 1, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -18,7 +18,7 @@ export default function Home() {
     const clean = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== ''));
     api
       .get('/listings', { params: clean })
-      .then(({ data }) => setListings(data))
+      .then((res) => setData(res.data))
       .catch((err) => setError(getErrorMessage(err)))
       .finally(() => setLoading(false));
   };
@@ -27,11 +27,18 @@ export default function Home() {
     search(initial);
   }, []);
 
-  const set = (key) => (e) => setFilters({ ...filters, [key]: e.target.value });
+  const set = (key) => (e) => setFilters({ ...filters, [key]: e.target.value, page: 1 });
+  
+  const handlePage = (newPage) => {
+    const newFilters = { ...filters, page: newPage };
+    setFilters(newFilters);
+    search(newFilters);
+  };
 
   const submit = (e) => {
     e.preventDefault();
-    search(filters);
+    search({ ...filters, page: 1 });
+    setFilters((prev) => ({ ...prev, page: 1 }));
   };
 
   return (
@@ -47,6 +54,12 @@ export default function Home() {
           </select>
           <input type="number" min="1" placeholder="Guests" value={filters.guests} onChange={set('guests')} />
           <input type="number" min="0" placeholder="Max ₹/night" value={filters.maxPrice} onChange={set('maxPrice')} />
+          <select value={filters.sort} onChange={set('sort')}>
+            <option value="">Sort by: Newest</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+            <option value="rating">Top Rated</option>
+          </select>
           <button className="btn">Search</button>
         </form>
       </div>
@@ -54,12 +67,33 @@ export default function Home() {
       {error && <p className="error">{error}</p>}
       {loading ? (
         <Loader />
-      ) : listings.length === 0 ? (
+      ) : data.listings.length === 0 ? (
         <p className="muted">No stays match your search.</p>
       ) : (
-        <div className="grid">
-          {listings.map((l) => <ListingCard key={l._id} listing={l} />)}
-        </div>
+        <>
+          <div className="grid">
+            {data.listings.map((l) => <ListingCard key={l._id} listing={l} />)}
+          </div>
+          {data.pages > 1 && (
+            <div className="row-between" style={{ marginTop: '24px', justifyContent: 'center', gap: '16px' }}>
+              <button 
+                className="btn btn-ghost" 
+                disabled={data.page === 1} 
+                onClick={() => handlePage(data.page - 1)}
+              >
+                Previous
+              </button>
+              <span className="muted">Page {data.page} of {data.pages}</span>
+              <button 
+                className="btn btn-ghost" 
+                disabled={data.page === data.pages} 
+                onClick={() => handlePage(data.page + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

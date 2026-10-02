@@ -6,7 +6,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 // GET /api/listings?city=&type=&minPrice=&maxPrice=&guests=
 // NOTE: no pagination yet, and checkIn/checkOut availability filter is not implemented.
 export const getListings = asyncHandler(async (req, res) => {
-  const { city, type, minPrice, maxPrice, guests } = req.query;
+  const { city, type, minPrice, maxPrice, guests, sort, page = 1, limit = 12 } = req.query;
   const filter = { isActive: true };
 
   if (city) filter.city = new RegExp(`^${city}`, 'i');
@@ -18,8 +18,28 @@ export const getListings = asyncHandler(async (req, res) => {
     if (maxPrice) filter.pricePerNight.$lte = Number(maxPrice);
   }
 
-  const listings = await Listing.find(filter).populate('host', 'name').sort({ createdAt: -1 });
-  res.json(listings);
+  let sortObj = { createdAt: -1 };
+  if (sort === 'price_asc') sortObj = { pricePerNight: 1 };
+  if (sort === 'price_desc') sortObj = { pricePerNight: -1 };
+  if (sort === 'rating') sortObj = { avgRating: -1 };
+
+  const pageNum = Number(page) || 1;
+  const limitNum = Number(limit) || 12;
+  const skip = (pageNum - 1) * limitNum;
+
+  const total = await Listing.countDocuments(filter);
+  const listings = await Listing.find(filter)
+    .populate('host', 'name')
+    .sort(sortObj)
+    .skip(skip)
+    .limit(limitNum);
+
+  res.json({
+    listings,
+    page: pageNum,
+    pages: Math.ceil(total / limitNum),
+    total,
+  });
 });
 
 // GET /api/listings/mine (host)
