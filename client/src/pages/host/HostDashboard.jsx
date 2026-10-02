@@ -36,12 +36,34 @@ export default function HostDashboard() {
   if (error) return <p className="error">{error}</p>;
   if (!listings) return <Loader />;
 
-  // TODO: earnings summary cards (total earnings, upcoming check-ins, occupancy).
+  const totalEarnings = bookings
+    .filter((b) => ['confirmed', 'completed'].includes(b.status))
+    .reduce((sum, b) => sum + b.totalPrice, 0);
+
+  const upcomingCount = bookings.filter(
+    (b) => b.status === 'confirmed' && new Date(b.checkIn) >= new Date(new Date().setHours(0, 0, 0, 0))
+  ).length;
+
   return (
     <section>
       <div className="row-between">
         <h1>Host Dashboard</h1>
         <Link to="/host/listings/new" className="btn">+ New listing</Link>
+      </div>
+
+      <div className="grid" style={{ marginBottom: '32px', marginTop: '24px' }}>
+        <div className="card card-body" style={{ alignItems: 'center', textAlign: 'center', padding: '24px' }}>
+          <span className="muted">Total Earnings</span>
+          <h2 style={{ margin: '8px 0 0' }}>{formatINR(totalEarnings)}</h2>
+        </div>
+        <div className="card card-body" style={{ alignItems: 'center', textAlign: 'center', padding: '24px' }}>
+          <span className="muted">Upcoming Check-ins</span>
+          <h2 style={{ margin: '8px 0 0' }}>{upcomingCount}</h2>
+        </div>
+        <div className="card card-body" style={{ alignItems: 'center', textAlign: 'center', padding: '24px' }}>
+          <span className="muted">Total Bookings</span>
+          <h2 style={{ margin: '8px 0 0' }}>{bookings.length}</h2>
+        </div>
       </div>
 
       <h2>Booking requests</h2>
