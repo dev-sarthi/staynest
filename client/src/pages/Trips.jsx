@@ -19,8 +19,8 @@ export default function Trips() {
     load();
   }, []);
 
-  // TODO: ask for confirmation before cancelling.
   const cancel = async (id) => {
+    if (!window.confirm('Are you sure you want to cancel this trip?')) return;
     try {
       await api.patch(`/bookings/${id}/cancel`);
       load();
