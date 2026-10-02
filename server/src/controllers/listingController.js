@@ -70,8 +70,9 @@ export const updateListing = asyncHandler(async (req, res) => {
 export const deleteListing = asyncHandler(async (req, res) => {
   const listing = await findOwnedListing(req, res);
   await listing.deleteOne();
-  // TODO: what should happen to existing bookings and reviews? See issue tracker.
-  res.json({ message: 'Listing deleted' });
+  await Booking.deleteMany({ listing: listing._id });
+  await Review.deleteMany({ listing: listing._id });
+  res.json({ message: 'Listing and associated records deleted' });
 });
 
 // GET /api/listings/:id/reviews
